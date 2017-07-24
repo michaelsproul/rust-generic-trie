@@ -72,7 +72,7 @@ mod tests;
 /// the insertion and removal methods and can be relied upon.
 #[derive(Debug, Clone)]
 pub struct SequenceTrie<K, V, S = RandomState>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     /// Node value.
@@ -82,15 +82,8 @@ pub struct SequenceTrie<K, V, S = RandomState>
     children: HashMap<K, SequenceTrie<K, V, S>, S>,
 }
 
-/// Aggregate trait for types which can be used to key a `SequenceTrie`.
-///
-/// This trait is automatically implemented for all types implementing
-/// the supertraits.
-pub trait TrieKey: 'static + PartialEq + Eq + Hash + Clone {}
-impl<K> TrieKey for K where K: 'static + PartialEq + Eq + Hash + Clone {}
-
 impl<K, V> SequenceTrie<K, V>
-    where K: TrieKey
+    where K: Eq + Hash
 {
     /// Creates a new `SequenceTrie` node with no value and an empty child map.
     pub fn new() -> SequenceTrie<K, V> {
@@ -99,7 +92,7 @@ impl<K, V> SequenceTrie<K, V>
 }
 
 impl<K, V, S> SequenceTrie<K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher + Clone
 {
     pub fn with_hasher(hash_builder: S) -> SequenceTrie<K, V, S> {
@@ -371,7 +364,7 @@ impl<K, V, S> SequenceTrie<K, V, S>
 
 /// Iterator over the keys and values of a `SequenceTrie`.
 pub struct Iter<'a, K: 'a, V: 'a, S: 'a = RandomState>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     root: &'a SequenceTrie<K, V, S>,
@@ -385,7 +378,7 @@ pub type KeyValuePair<'a, K, V> = (Vec<&'a K>, &'a V);
 
 /// Iterator over the keys of a `SequenceTrie`.
 pub struct Keys<'a, K: 'a, V: 'a, S: 'a = RandomState>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     inner: Iter<'a, K, V, S>,
@@ -393,7 +386,7 @@ pub struct Keys<'a, K: 'a, V: 'a, S: 'a = RandomState>
 
 /// Iterator over the values of a `SequenceTrie`.
 pub struct Values<'a, K: 'a, V: 'a, S: 'a = RandomState>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     inner: Iter<'a, K, V, S>,
@@ -401,7 +394,7 @@ pub struct Values<'a, K: 'a, V: 'a, S: 'a = RandomState>
 
 /// Information stored on the iteration stack whilst exploring.
 struct StackItem<'a, K: 'a, V: 'a, S: 'a = RandomState>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     child_iter: hash_map::Iter<'a, K, SequenceTrie<K, V, S>>,
@@ -409,7 +402,7 @@ struct StackItem<'a, K: 'a, V: 'a, S: 'a = RandomState>
 
 /// Delayed action type for iteration stack manipulation.
 enum IterAction<'a, K: 'a, V: 'a, S: 'a>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     Push(&'a K, &'a SequenceTrie<K, V, S>),
@@ -417,7 +410,7 @@ enum IterAction<'a, K: 'a, V: 'a, S: 'a>
 }
 
 impl<'a, K, V, S> Iterator for Iter<'a, K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     type Item = KeyValuePair<'a, K, V>;
@@ -463,7 +456,7 @@ impl<'a, K, V, S> Iterator for Iter<'a, K, V, S>
 }
 
 impl<'a, K, V, S> Iterator for Keys<'a, K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher,
 {
     type Item = Vec<&'a K>;
@@ -474,7 +467,7 @@ impl<'a, K, V, S> Iterator for Keys<'a, K, V, S>
 }
 
 impl<'a, K, V, S> Iterator for Values<'a, K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: BuildHasher
 {
     type Item = &'a V;
@@ -485,7 +478,7 @@ impl<'a, K, V, S> Iterator for Values<'a, K, V, S>
 }
 
 impl<K, V, S> PartialEq for SequenceTrie<K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           V: PartialEq,
           S: BuildHasher
 {
@@ -495,13 +488,13 @@ impl<K, V, S> PartialEq for SequenceTrie<K, V, S>
 }
 
 impl<K, V, S> Eq for SequenceTrie<K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           V: Eq,
           S: BuildHasher
 {}
 
 impl<K, V, S> Default for SequenceTrie<K, V, S>
-    where K: TrieKey,
+    where K: Eq + Hash,
           S: Default + BuildHasher + Clone
 {
     fn default() -> Self {
@@ -511,7 +504,7 @@ impl<K, V, S> Default for SequenceTrie<K, V, S>
 
 /// Iterator over the longest prefix of nodes which matches a key.
 pub struct PrefixIter<'trie, 'key, K, V, Q: ?Sized, I, S = RandomState>
-    where K: 'trie + TrieKey,
+    where K: 'trie + Eq + Hash,
           V: 'trie,
           I: 'key + Iterator<Item = &'key Q>,
           K: Borrow<Q>,
@@ -524,7 +517,7 @@ pub struct PrefixIter<'trie, 'key, K, V, Q: ?Sized, I, S = RandomState>
 }
 
 impl<'trie, 'key, K, V, Q: ?Sized, I, S> Iterator for PrefixIter<'trie, 'key, K, V, Q, I, S>
-    where K: 'trie + TrieKey,
+    where K: 'trie + Eq + Hash,
           V: 'trie,
           I: 'key + Iterator<Item = &'key Q>,
           K: Borrow<Q>,
